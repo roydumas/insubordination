@@ -9,11 +9,17 @@
 
     public sealed class RulesBaseEngine
     {
+        private IServiceProvider ServiceProvider { get; set; }
         private IList<Rule> Rules { get; set; }
 
         public RulesBaseEngine()
         {
             Rules = new List<Rule>();
+        }
+
+        public void SetContainer(IServiceProvider serviceProvider)
+        {
+            ServiceProvider = serviceProvider;
         }
 
         public void LoadTypes(Assembly assembly)
@@ -26,7 +32,7 @@
 
                 var priority = uint.MaxValue;
                 var priorityAttribute =
-                    (PriorityAttribute) System.Attribute.GetCustomAttribute(type, typeof(PriorityAttribute));
+                    (PriorityAttribute) Attribute.GetCustomAttribute(type, typeof(PriorityAttribute));
 
                 if (priorityAttribute != null)
                 {
@@ -34,11 +40,18 @@
                 }
 
                 var friendlyNameAttribute =
-                    (FriendlyNameAttribute) System.Attribute.GetCustomAttribute(type, typeof(FriendlyNameAttribute));
+                    (FriendlyNameAttribute) Attribute.GetCustomAttribute(type, typeof(FriendlyNameAttribute));
 
                 var name = friendlyNameAttribute != null ? friendlyNameAttribute.Name : type.Name;
 
-                var rule = (Rule)Activator.CreateInstance(type);
+                IList<object> parameters = new List<object>();
+
+                if (ServiceProvider != null)
+                {
+                    parameters = ResolveDependencies(type);
+                }
+
+                var rule = (Rule)Activator.CreateInstance(type, parameters.ToArray());
                 rule.Priority = priority;
                 rule.Name = name;
                 
@@ -49,6 +62,8 @@
             
             CreateChain();
         }
+
+
 
         public IEnumerable<Rule> Fire<T>(T t)
         {
@@ -83,6 +98,30 @@
             } while (currentRule != null);
 
             return failedRules;
+        }
+
+        private IList<object> ResolveDependencies(Type type)
+        {
+            var list = new List<object>();
+            var constructors = type.GetConstructors();
+
+            foreach (var constructorInfo in constructors)
+            {
+                foreach (var parameterInfo in constructorInfo.GetParameters())
+                {
+                    Console.WriteLine(string.Format(
+                        "Param {0} is named {1} and is of type {2}",
+                        parameterInfo.Position, parameterInfo.Name, parameterInfo.ParameterType));
+                    var service = ServiceProvider.GetService(parameterInfo.ParameterType);
+
+                    if (service != null)
+                    {
+                        list.Add(service);
+                    }
+                }
+            }
+
+            return list;
         }
     }
 }
