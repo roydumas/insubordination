@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\insubordination.model\insubordination.model.csproj" />
+    <ProjectReference Include="..\insubordination.rule.engine\insubordination.rule.engine.csproj" />
+  </ItemGroup>
+
+</Project>
