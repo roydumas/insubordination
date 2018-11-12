@@ -1,7 +1,9 @@
 ﻿namespace insubordination.model
 {
+    using System.Threading.Tasks;
+
     public interface IAnimalRepository
     {
-        Animal GetAnimalByName(string name);
+        Task<Animal> GetAnimalByNameAsync(string name);
     }
 }

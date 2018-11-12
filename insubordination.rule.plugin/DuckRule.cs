@@ -1,5 +1,7 @@
 ﻿namespace insubordination.rule.plugin
 {
+    using System.Threading.Tasks;
+
     using insubordination.model;
     using insubordination.rule.engine;
     using insubordination.rule.engine.attribute;
@@ -8,11 +10,13 @@
     [Priority(0)]
     public class DuckRule : Rule
     {
-        public override bool IsMatch<T>(T t)
+        public override async Task<bool> MatchAsync<T>(T t)
         {
+            await Task.CompletedTask;
+
             var animal = t as Animal;
 
-            return animal?.CanFly == false;
+            return animal?.CanFly == true;
         }
     }
 }

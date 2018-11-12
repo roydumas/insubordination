@@ -1,5 +1,7 @@
 ﻿namespace insubordination.rule.engine
 {
+    using System.Threading.Tasks;
+
     public abstract class Rule
     {
         public string Name { get; set; }
@@ -11,6 +13,6 @@
             Successor = successor;
         }
 
-        public abstract bool IsMatch<T>(T t);        
+        public abstract Task<bool> MatchAsync<T>(T t);        
     } 
 }

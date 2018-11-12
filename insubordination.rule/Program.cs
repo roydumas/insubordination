@@ -14,7 +14,7 @@
     {
         static void Main(string[] args)
         {
-            var rbe = new RulesBaseEngine();
+            var rbe = new RulesBasedEngine();
 
             var animal = new Animal
             {
@@ -26,17 +26,19 @@
             };
 
             rbe.SetContainer(ConfigureServices());
-            rbe.LoadTypes(Assembly.GetAssembly(typeof(BullRule)));
+            rbe.Load(Assembly.GetAssembly(typeof(BullRule)));
             
-            var failedRules = rbe.Fire(animal);
+            var failedRules = rbe.FireAsync(animal).Result;
             
-            Console.WriteLine($"Failed Rules: { failedRules.Count() }");
+            Console.WriteLine($"Failed Rules: { string.Join(",", failedRules.Select(f => f.Name)) }");
+            Console.WriteLine($"Disabled: {string.Join(",", rbe.DisabledRules)}");
+            Console.WriteLine($"Passed: {string.Join(",", rbe.PassedRules)}");
+
             Console.ReadKey();
         }
 
         private static IServiceProvider ConfigureServices()
         {
-            //setup our DI
             var serviceProvider = new ServiceCollection()
                 .AddScoped<IAnimalRepository, AnimalRepository>()
                 .AddScoped<IAnimalService, AnimalService>()

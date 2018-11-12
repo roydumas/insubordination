@@ -1,5 +1,7 @@
 ﻿namespace insubordination.model
 {
+    using System.Threading.Tasks;
+
     public class AnimalService : IAnimalService
     {
         private readonly IAnimalRepository _animalRepository;
@@ -9,9 +11,10 @@
             _animalRepository = animalRepository;
         }
 
-        public Animal GetAnimalByName(string name)
+        public async Task<Animal> GetAnimalByNameAsync(string name)
         {
-            return _animalRepository.GetAnimalByName(name);
-        }
+            var animal = await _animalRepository.GetAnimalByNameAsync(name);
+            return animal;
+        }        
     }
 }
