@@ -6,7 +6,7 @@
     {
         public string Reason { get; set; }
 
-        public DisabledAttribute(string reason)
+        public DisabledAttribute(string reason = "")
         {
             Reason = reason;
         }

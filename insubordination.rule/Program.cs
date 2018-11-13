@@ -28,11 +28,17 @@
             rbe.SetContainer(ConfigureServices());
             rbe.Load(Assembly.GetAssembly(typeof(BullRule)));
             
-            var failedRules = rbe.FireAsync(animal).Result;
+            var failedRules = rbe.MatchAsync(animal, "Birds").Result;
             
             Console.WriteLine($"Failed Rules: { string.Join(",", failedRules.Select(f => f.Name)) }");
-            Console.WriteLine($"Disabled: {string.Join(",", rbe.DisabledRules)}");
-            Console.WriteLine($"Passed: {string.Join(",", rbe.PassedRules)}");
+            Console.WriteLine($"Disabled: { string.Join(",", rbe.DisabledRules.Select(f => f.Name)) }");
+            Console.WriteLine($"Passed: { string.Join(",", rbe.PassedRules.Select(f => f.Name)) }");
+
+            failedRules = rbe.MatchAsync(animal).Result;
+
+            Console.WriteLine($"Failed Rules: { string.Join(",", failedRules.Select(f => f.Name)) }");
+            Console.WriteLine($"Disabled: { string.Join(",", rbe.DisabledRules.Select(f => f.Name)) }");
+            Console.WriteLine($"Passed: { string.Join(",", rbe.PassedRules.Select(f => f.Name)) }");
 
             Console.ReadKey();
         }

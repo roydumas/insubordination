@@ -15,9 +15,9 @@
         private IServiceProvider ServiceProvider { get; set; }
         private IList<Rule> Rules { get; set; }
         
-        public IList<string> DisabledRules { get; }
-        public IList<string> FailedRules { get; }
-        public IList<string> PassedRules { get; }
+        public IList<Rule> DisabledRules { get; }
+        public IList<Rule> FailedRules { get; }
+        public IList<Rule> PassedRules { get; }
 
         public RulesBasedEngine(bool processAllRules = true)
         {
@@ -25,9 +25,9 @@
 
             Rules = new List<Rule>();
 
-            DisabledRules = new List<string>();
-            FailedRules = new List<string>();
-            PassedRules = new List<string>();
+            DisabledRules = new List<Rule>();
+            FailedRules = new List<Rule>();
+            PassedRules = new List<Rule>();
         }
 
         public void SetContainer(IServiceProvider serviceProvider)
@@ -51,10 +51,13 @@
                 var disableAttribute =
                     (DisabledAttribute)Attribute.GetCustomAttribute(type, typeof(DisabledAttribute));
 
-                if (disableAttribute != null)
+                var group = string.Empty;
+                var groupAttribute =
+                    (GroupAttribute)Attribute.GetCustomAttribute(type, typeof(GroupAttribute));
+
+                if (groupAttribute != null)
                 {
-                    DisabledRules.Add(name);
-                    continue;
+                    group = groupAttribute.Name;
                 }
 
                 var priority = uint.MaxValue;
@@ -76,62 +79,101 @@
                 var rule = (Rule)Activator.CreateInstance(type, parameters.ToArray());
                 rule.Priority = priority;
                 rule.Name = name;
-                
+                rule.Group = group;
+
+                if (disableAttribute != null)
+                {
+                    DisabledRules.Add(rule);
+                    continue;
+                }
+
                 Rules.Add(rule);                
             }
 
-            Rules = Rules.OrderBy(o => o.Priority).ToList();
-            
-            CreateChain();
+            if (Rules.Any() == false)
+            {
+                throw new ArgumentException(
+                    "A referenced assembly must contain at least one subclass implementation of the abstract class Rule.");
+            }
         }
-        
+
         /// <summary>
         /// Returns rules that didn't pass
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="t"></param>
+        /// <param name="group"></param>
         /// <returns>
         /// if all rules passed, then an empty collection, 
         /// otherwise, the list of  rules that did not pass.
         /// </returns>
-        public async Task<IEnumerable<Rule>> FireAsync<T>(T t)
+        public async Task<IEnumerable<Rule>> MatchAsync<T>(T t, string group = "")
         {
-            return await ProcessChainAsync(t);
+            Reset();
+            var rules = CreateChain(group);
+            return await ProcessChainAsync(t, rules);
         }
 
-        private void CreateChain()
+        private IEnumerable<Rule> CreateChain(string group = "")
         {
-            var rule = Rules.First();
+            var groupRules =
+                string.IsNullOrEmpty(group) ? Rules : Rules.Where(r => r.Group == group).ToList();
 
-            for (var i = 1; i < Rules.Count; i++)
+            if (groupRules.Any() == false)
             {
-                var successor = Rules[i];
+                throw new ArgumentException($"There aren't any rules in the group [{group}]", nameof(group));
+            }
+
+            var rules = groupRules.OrderBy(gr => gr.Priority).ToList();
+            var rule = rules.First();
+
+            for (var i = 1; i < rules.Count; i++)
+            {
+                var successor = rules[i];
                 rule.SetSuccessor(successor);
                 rule = successor;
             }
+
+            return rules;
         }
 
-        private async Task<IEnumerable<Rule>> ProcessChainAsync<T>(T t)
+        private void Reset()
+        {
+            foreach (var rule in Rules)
+            {
+                rule.SetSuccessor(null);
+            }
+
+            DisabledRules.Clear();
+            FailedRules.Clear();            
+            PassedRules.Clear();
+        }
+        
+        private async Task<IEnumerable<Rule>> ProcessChainAsync<T>(T t, IEnumerable<Rule> rules)
         {
             var notMatchedRules = new List<Rule>();
-            var currentRule = Rules.First();
+            var currentRule = rules.First();
 
             do
             {
                 var match = await currentRule.MatchAsync(t);
                 if (match == false)
                 {
-                    FailedRules.Add(currentRule.Name);
+                    FailedRules.Add(currentRule);
                     notMatchedRules.Add(currentRule);
+
                     if (_processAllRules == false) break;
                 }
                 else
                 {
-                    PassedRules.Add(currentRule.Name);
+                    PassedRules.Add(currentRule);
                 }
+
                 currentRule = currentRule.Successor;
+
             } while (currentRule != null);
             
+         
             return notMatchedRules;
         }
 

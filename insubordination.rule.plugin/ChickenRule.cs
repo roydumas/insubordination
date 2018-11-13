@@ -6,7 +6,9 @@
     using insubordination.rule.engine;
     using insubordination.rule.engine.attribute;
     
+    //[Disabled]
     [FriendlyName("Chicken")]
+    [Group("Birds")]
     [Priority(2)]
     public class ChickenRule : Rule
     {

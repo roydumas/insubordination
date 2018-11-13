@@ -5,6 +5,7 @@
     public abstract class Rule
     {
         public string Name { get; set; }
+        public string Group { get; set; }
         public uint Priority { get; set; }
         internal Rule Successor { get; private set; }
 

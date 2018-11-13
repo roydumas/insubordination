@@ -7,6 +7,7 @@
     using insubordination.rule.engine.attribute;
 
     [FriendlyName("Duck")]
+    [Group("Birds")]
     [Priority(0)]
     public class DuckRule : Rule
     {
